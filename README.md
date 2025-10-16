@@ -10,6 +10,8 @@ But the leanness makes these useful for agent-driven development. Use these as c
 
 ## Contents
 
+More examples coming soon.
+
 ```
 examples/
 ├── basics/
