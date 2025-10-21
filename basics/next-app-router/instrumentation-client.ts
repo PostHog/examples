@@ -10,6 +10,6 @@ posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
   // Turn on debug in development mode
   debug: process.env.NODE_ENV === "development",
   // Disable request batching in test environment
-  request_batching: process.env.CI ? false : true,
-  opt_out_useragent_filter: process.env.CI ? true : false,  // This disables bot detection
+  request_batching: false,
+  opt_out_useragent_filter: true,  // This disables bot detection
 });
