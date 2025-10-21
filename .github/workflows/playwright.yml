@@ -35,6 +35,9 @@ jobs:
       run: |
         cd basics/next-app-router
         pnpm exec playwright test
+      env:
+        NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+        NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
         
     - uses: actions/upload-artifact@v4
       if: always()
