@@ -45,7 +45,7 @@ Open [http://localhost:5173](http://localhost:5173) with your browser to see the
 ## Project Structure
 
 ```
-app/
+src/
 ├── components/
 │   └── Header.tsx              # Navigation header with auth state
 ├── contexts/
@@ -61,7 +61,9 @@ app/
 ├── root.tsx                    # Root layout with providers
 └── routes.ts                   # Route configuration
 
+react-router.config.ts          # React Router config (appDirectory: "src")
 vite.config.ts                  # Vite config with PostHog proxy
+tsconfig.json                   # TypeScript config (paths: ~/* -> ./src/*)
 ```
 
 ## Key Integration Points
