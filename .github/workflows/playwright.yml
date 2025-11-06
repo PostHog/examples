@@ -1,4 +1,6 @@
 name: Next.js App Router - PostHog Tests
+permissions:
+  contents: read
 
 on:
   push:
