@@ -8,11 +8,11 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root.tsx'
-import { Route as ProfileRouteImport } from './routes/profile.tsx'
-import { Route as BurritoRouteImport } from './routes/burrito.tsx'
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as BurritoRouteImport } from './routes/burrito'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login.ts'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',

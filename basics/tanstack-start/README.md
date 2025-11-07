@@ -64,7 +64,7 @@ vite.config.ts               # Vite config with PostHog proxy
 .env                         # Environment variables
 ```
 
-## Key integraiton points
+## Key integration points
 
 ### Client-side initialization
 

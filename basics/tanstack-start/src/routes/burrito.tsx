@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { posthog } from '../lib/posthog-client'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -23,13 +23,9 @@ function BurritoPage() {
   const navigate = useNavigate()
   const [hasConsidered, setHasConsidered] = useState(false)
 
-  useEffect(() => {
-    if (!user) {
-      navigate({ to: '/' })
-    }
-  }, [user, navigate])
-
+  // Redirect to home if not logged in
   if (!user) {
+    navigate({ to: '/' })
     return null
   }
 
