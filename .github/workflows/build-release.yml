@@ -47,8 +47,11 @@ jobs:
             VERSION="${{ github.event.inputs.version }}"
             echo "Using manually specified version: ${VERSION}"
           else
-            # Get the latest tag, or use 0.0.0 if no tags exist
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            # Get the latest semver tag (ignore 'latest' tag), or use 0.0.0 if no tags exist
+            LATEST_TAG=$(git tag -l 'v*.*.*' --sort=-v:refname | head -n 1)
+            if [ -z "$LATEST_TAG" ]; then
+              LATEST_TAG="v0.0.0"
+            fi
             # Remove 'v' prefix if present
             LATEST_VERSION=${LATEST_TAG#v}
             
