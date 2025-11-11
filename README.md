@@ -104,6 +104,10 @@ Same functionality as App Router example, but using Pages Router:
 - Metadata via `next/head` component
 - Custom `_app.tsx` and `_document.tsx`
 
+### basics/react-react-router
+
+Coming soon.
+
 ## Getting Started
 
 Each example includes its own README with setup instructions. Generally:
