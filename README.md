@@ -108,6 +108,10 @@ Same functionality as App Router example, but using Pages Router:
 
 Coming soon.
 
+### basics/react-tanstack-router
+
+Coming soon.
+
 ## Getting Started
 
 Each example includes its own README with setup instructions. Generally:
