@@ -48,10 +48,13 @@ jobs:
             echo "Using manually specified version: ${VERSION}"
           else
             # Get the latest semver tag (ignore 'latest' tag), or use 0.0.0 if no tags exist
-            LATEST_TAG=$(git tag -l 'v*.*.*' --sort=-v:refname | head -n 1)
+            # Use grep to filter only tags matching semver pattern (v followed by digits)
+            # Explicitly exclude 'latest' tag
+            LATEST_TAG=$(git tag -l | grep -v '^latest$' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
             if [ -z "$LATEST_TAG" ]; then
               LATEST_TAG="v0.0.0"
             fi
+            echo "Latest semver tag found: ${LATEST_TAG}"
             # Remove 'v' prefix if present
             LATEST_VERSION=${LATEST_TAG#v}
             
