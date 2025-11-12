@@ -70,7 +70,7 @@ jobs:
       uses: PostHog/posthog-github-action@v0.1
       # A CDP destination is set-up to alert when we get this event
       with:
-        posthog-token: '${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}'
+        posthog-token: '${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}'
         event: 'posthog-examples-repo-test-failure'
         properties: >-
           {
