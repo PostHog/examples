@@ -1,15 +1,12 @@
-name: PostHog Examples - Playwright Tests
+name: PostHog Examples - E2E tests
 permissions:
   contents: read
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   schedule:
     # Runs nightly at 12am PST (which is 8am UTC)
     - cron: '0 8 * * *'
+  workflow_dispatch:
 
 jobs:
   discover:
@@ -56,13 +53,15 @@ jobs:
         cd basics/${{ matrix.example }}
         pnpm exec playwright install chromium --with-deps
 
-    - name: Run Playwright tests
+    - name: Run E2E Playwright tests
       run: |
         cd basics/${{ matrix.example }}
-        pnpm exec playwright test
+        pnpm run test:e2e
       env:
         NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
         NEXT_PUBLIC_POSTHOG_HOST: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+        PERSONAL_ACCESS_KEY: ${{ secrets.PERSONAL_ACCESS_KEY }}
+        PROJECT_ID: ${{ vars.PROJECT_ID }}
 
     - uses: actions/upload-artifact@v4
       if: always()
