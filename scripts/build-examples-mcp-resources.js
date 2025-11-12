@@ -889,7 +889,9 @@ async function build() {
 
 // Run the build
 build().catch(err => {
-    console.error('Build failed:', err);
+    console.error('\n[FATAL ERROR] Build failed:', err);
+    console.error('\nStack trace:');
+    console.error(err.stack);
     process.exit(1);
 });
 
