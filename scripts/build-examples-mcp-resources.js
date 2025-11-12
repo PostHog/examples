@@ -312,7 +312,7 @@ function convertProjectToMarkdown(absolutePath, frameworkInfo, relativePath, ski
             }
         } catch (e) {
             // Skip files that can't be read as text
-            console.warn(`Skipping ${file.relativePath}: ${e.message}`);
+            console.error(`[ERROR] Failed to process ${file.relativePath}:`, e);
         }
     }
 
@@ -345,20 +345,25 @@ function parseWorkflowFilename(filename) {
  * Throws error if frontmatter is missing required fields
  */
 function extractMetadataFromMarkdown(content, filename) {
-    const parsed = matter(content);
+    try {
+        const parsed = matter(content);
 
-    if (!parsed.data.title) {
-        throw new Error(`Missing 'title' in frontmatter for ${filename}`);
+        if (!parsed.data.title) {
+            throw new Error(`Missing 'title' in frontmatter for ${filename}`);
+        }
+
+        if (!parsed.data.description) {
+            throw new Error(`Missing 'description' in frontmatter for ${filename}`);
+        }
+
+        return {
+            title: parsed.data.title,
+            description: parsed.data.description,
+        };
+    } catch (e) {
+        console.error(`[ERROR] Failed to extract metadata from ${filename}:`, e);
+        throw e;
     }
-
-    if (!parsed.data.description) {
-        throw new Error(`Missing 'description' in frontmatter for ${filename}`);
-    }
-
-    return {
-        title: parsed.data.title,
-        description: parsed.data.description,
-    };
 }
 
 /**
@@ -384,22 +389,27 @@ function discoverWorkflows(promptsPath) {
                 continue;
             }
 
-            const filePath = path.join(categoryPath, filename);
-            const content = fs.readFileSync(filePath, 'utf8');
-            const metadata = extractMetadataFromMarkdown(content, `${category}/${filename}`);
+            try {
+                const filePath = path.join(categoryPath, filename);
+                const content = fs.readFileSync(filePath, 'utf8');
+                const metadata = extractMetadataFromMarkdown(content, `${category}/${filename}`);
 
-            workflows.push({
-                category,
-                filename,
-                order: parsed.order,
-                step: parsed.step,
-                name: parsed.name,
-                id: `${category}-${parsed.name}`,
-                title: metadata.title || parsed.name.replace(/-/g, ' '),
-                description: metadata.description || `Workflow step for ${parsed.name}`,
-                file: `prompts/${category}/${filename}`,
-                fullPath: filePath,
-            });
+                workflows.push({
+                    category,
+                    filename,
+                    order: parsed.order,
+                    step: parsed.step,
+                    name: parsed.name,
+                    id: `${category}-${parsed.name}`,
+                    title: metadata.title || parsed.name.replace(/-/g, ' '),
+                    description: metadata.description || `Workflow step for ${parsed.name}`,
+                    file: `prompts/${category}/${filename}`,
+                    fullPath: filePath,
+                });
+            } catch (e) {
+                console.error(`[ERROR] Failed to process workflow ${category}/${filename}:`, e);
+                throw e;
+            }
         }
     }
 
@@ -445,19 +455,37 @@ function discoverPrompts(promptsPath) {
     const files = fs.readdirSync(promptsPath).filter(f => f.endsWith('.json'));
 
     for (const filename of files) {
-        const filePath = path.join(promptsPath, filename);
-        const content = fs.readFileSync(filePath, 'utf8');
-        const promptData = JSON.parse(content);
+        try {
+            const filePath = path.join(promptsPath, filename);
+            const content = fs.readFileSync(filePath, 'utf8');
+            const promptData = JSON.parse(content);
 
-        prompts.push({
-            id: promptData.name,
-            name: promptData.name,
-            title: promptData.title,
-            description: promptData.description,
-            file: `mcp-commands/${filename}`,
-            fullPath: filePath,
-            messages: promptData.messages,
-        });
+            if (!promptData.name) {
+                throw new Error(`Missing 'name' field in prompt JSON`);
+            }
+            if (!promptData.title) {
+                throw new Error(`Missing 'title' field in prompt JSON`);
+            }
+            if (!promptData.description) {
+                throw new Error(`Missing 'description' field in prompt JSON`);
+            }
+            if (!promptData.messages) {
+                throw new Error(`Missing 'messages' field in prompt JSON`);
+            }
+
+            prompts.push({
+                id: promptData.name,
+                name: promptData.name,
+                title: promptData.title,
+                description: promptData.description,
+                file: `mcp-commands/${filename}`,
+                fullPath: filePath,
+                messages: promptData.messages,
+            });
+        } catch (e) {
+            console.error(`[ERROR] Failed to process prompt ${filename}:`, e);
+            throw e;
+        }
     }
 
     return prompts;
@@ -577,19 +605,25 @@ function generateManifest(discoveredWorkflows, exampleIds, discoveredPrompts) {
     };
 
     // Build prompts array with template variables replaced
-    const prompts = discoveredPrompts.map(prompt => ({
-        id: prompt.id,
-        name: prompt.name,
-        title: prompt.title,
-        description: prompt.description,
-        messages: prompt.messages.map(msg => ({
-            ...msg,
-            content: {
-                ...msg.content,
-                text: replaceTemplateVars(msg.content.text),
-            },
-        })),
-    }));
+    // Add available frameworks to description so the agent knows what's available
+    const prompts = discoveredPrompts.map(prompt => {
+        const availableFrameworks = examples.map(ex => ex.id);
+        const frameworksList = availableFrameworks.join(', ');
+
+        return {
+            id: prompt.id,
+            name: prompt.name,
+            title: prompt.title,
+            description: `${prompt.description}. Available frameworks: ${frameworksList}`,
+            messages: prompt.messages.map(msg => ({
+                ...msg,
+                content: {
+                    ...msg.content,
+                    text: replaceTemplateVars(msg.content.text),
+                },
+            })),
+        };
+    });
 
     // Build resource templates
     // Examples and framework docs should be templated for easy parameterized access
@@ -695,41 +729,46 @@ async function build() {
     const markdownFiles = [];
 
     for (const example of defaultConfig.examples) {
-        const absolutePath = path.join(__dirname, '..', example.path);
+        try {
+            const absolutePath = path.join(__dirname, '..', example.path);
 
-        if (!fs.existsSync(absolutePath)) {
-            console.warn(`Warning: Project directory not found: ${absolutePath}`);
-            continue;
+            if (!fs.existsSync(absolutePath)) {
+                console.warn(`[WARNING] Project directory not found: ${absolutePath}`);
+                continue;
+            }
+
+            // Merge global and example-specific skip patterns
+            const skipPatterns = mergeSkipPatterns(
+                defaultConfig.globalSkipPatterns,
+                example.skipPatterns
+            );
+
+            // Merge global and example-specific plugins
+            const plugins = [
+                ...(defaultConfig.plugins || []),
+                ...(example.plugins || [])
+            ];
+
+            console.log(`Processing ${example.displayName}...`);
+            const markdown = convertProjectToMarkdown(
+                absolutePath,
+                example,
+                example.path,
+                skipPatterns,
+                plugins
+            );
+
+            const outputFilename = `${example.id}.md`;
+            const outputPath = path.join(outputDir, outputFilename);
+
+            fs.writeFileSync(outputPath, markdown, 'utf8');
+            markdownFiles.push({ filename: outputFilename, path: outputPath });
+
+            console.log(`  ✓ Generated ${outputFilename} (${(markdown.length / 1024).toFixed(1)} KB)`);
+        } catch (e) {
+            console.error(`[ERROR] Failed to process example ${example.displayName}:`, e);
+            throw e;
         }
-
-        // Merge global and example-specific skip patterns
-        const skipPatterns = mergeSkipPatterns(
-            defaultConfig.globalSkipPatterns,
-            example.skipPatterns
-        );
-
-        // Merge global and example-specific plugins
-        const plugins = [
-            ...(defaultConfig.plugins || []),
-            ...(example.plugins || [])
-        ];
-
-        console.log(`Processing ${example.displayName}...`);
-        const markdown = convertProjectToMarkdown(
-            absolutePath,
-            example,
-            example.path,
-            skipPatterns,
-            plugins
-        );
-
-        const outputFilename = `${example.id}.md`;
-        const outputPath = path.join(outputDir, outputFilename);
-
-        fs.writeFileSync(outputPath, markdown, 'utf8');
-        markdownFiles.push({ filename: outputFilename, path: outputPath });
-
-        console.log(`  ✓ Generated ${outputFilename} (${(markdown.length / 1024).toFixed(1)} KB)`);
     }
 
     // ========================================================================
@@ -739,15 +778,20 @@ async function build() {
     const promptsPath = path.join(__dirname, '..', 'llm-prompts');
     let discoveredWorkflows = [];
 
-    if (fs.existsSync(promptsPath)) {
-        discoveredWorkflows = discoverWorkflows(promptsPath);
-        console.log(`  ✓ Discovered ${discoveredWorkflows.length} workflow steps`);
+    try {
+        if (fs.existsSync(promptsPath)) {
+            discoveredWorkflows = discoverWorkflows(promptsPath);
+            console.log(`  ✓ Discovered ${discoveredWorkflows.length} workflow steps`);
 
-        // Process workflow files with next-step appending
-        const workflowFiles = processWorkflowFiles(discoveredWorkflows, outputDir);
-        markdownFiles.push(...workflowFiles);
-    } else {
-        console.warn('  Warning: LLM prompts directory not found');
+            // Process workflow files with next-step appending
+            const workflowFiles = processWorkflowFiles(discoveredWorkflows, outputDir);
+            markdownFiles.push(...workflowFiles);
+        } else {
+            console.warn('[WARNING] LLM prompts directory not found');
+        }
+    } catch (e) {
+        console.error('[ERROR] Failed to discover/process workflows:', e);
+        throw e;
     }
 
     // ========================================================================
@@ -755,11 +799,18 @@ async function build() {
     // ========================================================================
     console.log('\nDiscovering prompts...');
     const promptsDir = path.join(__dirname, '..', 'mcp-commands');
-    const discoveredPrompts = discoverPrompts(promptsDir);
-    if (discoveredPrompts.length > 0) {
-        console.log(`  ✓ Discovered ${discoveredPrompts.length} prompts`);
-    } else {
-        console.log('  No prompts found');
+    let discoveredPrompts = [];
+
+    try {
+        discoveredPrompts = discoverPrompts(promptsDir);
+        if (discoveredPrompts.length > 0) {
+            console.log(`  ✓ Discovered ${discoveredPrompts.length} prompts`);
+        } else {
+            console.log('  No prompts found');
+        }
+    } catch (e) {
+        console.error('[ERROR] Failed to discover prompts:', e);
+        throw e;
     }
 
     // ========================================================================
@@ -767,16 +818,22 @@ async function build() {
     // ========================================================================
     console.log('\nGenerating manifest...');
     const exampleIds = defaultConfig.examples.map(ex => ex.id);
-    const manifest = generateManifest(discoveredWorkflows, exampleIds, discoveredPrompts);
-    const manifestPath = path.join(outputDir, 'manifest.json');
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
-    console.log(`  ✓ Generated manifest.json`);
 
-    // Add manifest to files to be archived
-    markdownFiles.push({
-        filename: 'manifest.json',
-        path: manifestPath
-    });
+    try {
+        const manifest = generateManifest(discoveredWorkflows, exampleIds, discoveredPrompts);
+        const manifestPath = path.join(outputDir, 'manifest.json');
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+        console.log(`  ✓ Generated manifest.json`);
+
+        // Add manifest to files to be archived
+        markdownFiles.push({
+            filename: 'manifest.json',
+            path: manifestPath
+        });
+    } catch (e) {
+        console.error('[ERROR] Failed to generate manifest:', e);
+        throw e;
+    }
 
     // ========================================================================
     // Step 5: Create ZIP Archive
@@ -794,17 +851,36 @@ async function build() {
     });
 
     archive.on('error', (err) => {
+        console.error('[ERROR] Archive creation failed:', err);
         throw err;
+    });
+
+    archive.on('warning', (err) => {
+        if (err.code === 'ENOENT') {
+            console.warn('[WARNING] Archive warning:', err);
+        } else {
+            console.error('[ERROR] Archive error:', err);
+            throw err;
+        }
     });
 
     archive.pipe(output);
 
     // Add markdown files to archive
-    for (const file of markdownFiles) {
-        archive.file(file.path, { name: file.filename });
-    }
+    try {
+        for (const file of markdownFiles) {
+            if (!fs.existsSync(file.path)) {
+                throw new Error(`File not found: ${file.path}`);
+            }
+            console.log(`  Adding to archive: ${file.filename}`);
+            archive.file(file.path, { name: file.filename });
+        }
 
-    await archive.finalize();
+        await archive.finalize();
+    } catch (e) {
+        console.error('[ERROR] Failed to add files to archive:', e);
+        throw e;
+    }
 }
 
 //#endregion
