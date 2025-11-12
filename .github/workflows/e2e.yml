@@ -64,11 +64,11 @@ jobs:
         PROJECT_ID: ${{ vars.PROJECT_ID }}
 
     - name: Send failure event to PostHog
-      if: ${{ failure() }}
+      if: failure() && github.event_name == 'schedule'
       uses: PostHog/posthog-github-action@v0.1
       # A CDP destination is set-up to alert when we get this event
       with:
-        posthog-token: '${{ secrets.POSTHOG_API_TOKEN }}'
+        posthog-token: '${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}'
         event: 'posthog-examples-repo-test-failure'
         properties: >-
           {
