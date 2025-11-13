@@ -41,9 +41,6 @@ test('verify user is logged in', async ({ page }) => {
   
   // Verify expected events were captured
   verifyExpectedEvents();
-  
-  // Force failure for testing
-  expect(true).toBe(false);
 });
 
 // Helper functions
