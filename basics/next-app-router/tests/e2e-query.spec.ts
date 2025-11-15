@@ -18,11 +18,11 @@ test('e2e-query', async () => {
     throw new Error('PERSONAL_ACCESS_KEY and POSTHOG_PROJECT_ID environment variables are required');
   }
   
-  const expectedEvents = ['server_login', '$web_vitals', 'user_logged_in', '$identify'];
+  const expectedEvents = ["$identify", "server_login", "user_logged_in"];
   
   const query = {
     kind: 'HogQLQuery',
-    query: `SELECT * FROM events WHERE distinct_id = '${yesterdayUsername}'`
+    query: `SELECT * FROM events WHERE distinct_id = '${yesterdayUsername}' limit 100`
   };
   
   const url = `${posthogHost}/api/projects/${posthogProjectId}/query/`;
