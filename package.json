@@ -1,12 +1,16 @@
 {
   "name": "@posthog/examples",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "PostHog example projects",
   "scripts": {
     "build:docs": "node scripts/build-examples-mcp-resources.js",
+<<<<<<< HEAD
     "build:skills": "node scripts/build-skills.js",
     "build": "npm run build:skills && npm run build:docs",
+=======
+    "build": "npm run build:docs",
+>>>>>>> 4a972a459377a335561c68b7e918737358636b9c
     "dev": "node scripts/dev-server.js",
     "test:plugins": "vitest run scripts/plugins/tests",
     "test:plugins:watch": "vitest scripts/plugins/tests"
