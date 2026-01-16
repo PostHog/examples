@@ -11,4 +11,12 @@ commandments:
   javascript:
     - Remember that source code is available in the node_modules directory
 
+  python:
+    - Remember that source code is available in the venv/site-packages directory
+    
+  django:
+    - Ensure PostHog middleware is placed after AuthenticationMiddleware in MIDDLEWARE settings
+    - Use Django's request object to access user and session data for PostHog identify calls
+
+
   
