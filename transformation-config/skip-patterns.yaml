@@ -58,6 +58,10 @@ global:
     - eslint
     - repomix-output.xml
 
+    # Python
+    - venv
+    - .pyc
+
   # Regex patterns - skip if path matches
   # Note: Patterns are JavaScript regex syntax
   regex:
