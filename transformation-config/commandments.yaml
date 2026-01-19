@@ -20,7 +20,7 @@ commandments:
   django:
     - Add 'posthog.integrations.django.PosthogContextMiddleware' to MIDDLEWARE it auto-extracts tracing headers and captures exceptions
     - Initialize PostHog in AppConfig.ready() with api_key and host from environment variables
-    - Use the context API pattern: new_context(), identify_context(user_id), then capture()
+    - Use the context API pattern with new_context(), identify_context(user_id), then capture()
     - For login/logout views, create a new context since user state changes during the request
     - Do NOT create custom middleware, distinct_id helpers, or conditional checks - the SDK handles these
   
